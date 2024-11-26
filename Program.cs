@@ -7,28 +7,46 @@ using System.Threading;
 
 var threads = new List<Thread>();
 var running = true;
-var meetingId = Environment.GetEnvironmentVariable("MEETING_ID");
-var password = Environment.GetEnvironmentVariable("MEETING_PASSWORD");
-var threadCount = int.Parse(Environment.GetEnvironmentVariable("PARTICIPANT_COUNT") ?? "0");
+var meetingId = string.Empty;
+var password = string.Empty;
+var threadCount = 0;
 
 Console.WriteLine("MS Teams Dummy Participant Runner - Using Chrome");
 Console.WriteLine("Created by Elias Puurunen @ Tractus Events - https://www.tractusevents.com");
 
-if (string.IsNullOrEmpty(meetingId) || string.IsNullOrEmpty(password) || threadCount <= 0)
+if (args.Length == 3)
 {
-    Console.WriteLine("Please provide the Teams meeting ID, password, and number of participants.");
-    Environment.Exit(1); // Exit with an error if required values are not provided.
+    meetingId = args[0];
+    password = args[1];
+    threadCount = int.Parse(args[2]);
+}
+else
+{
+    Console.WriteLine("Please provide the Teams meeting ID.");
+    while (string.IsNullOrEmpty(meetingId))
+    {
+        meetingId = Console.ReadLine();
+    }
+
+    Console.WriteLine("Please provide the Teams meeting password.");
+    while (string.IsNullOrEmpty(password))
+    {
+        password = Console.ReadLine();
+    }
+
+    Console.WriteLine("How many test participants? (Max recommended: 5)");
+    while (!int.TryParse(Console.ReadLine(), out threadCount))
+    {
+    }
 }
 
 for (var i = 0; i < threadCount; i++)
 {
     var thread = new Thread((o) =>
     {
-        if (o is not int participantNumber) return; // Safe null-check for unboxing
-
+        var participantNumber = (int)o;
         var chromeOptions = new ChromeOptions();
 
-        // Add arguments one by one
         chromeOptions.AddArgument("--headless");
         chromeOptions.AddArgument("--window-size=1280,720");
         chromeOptions.AddArgument("--mute-audio");
@@ -43,123 +61,96 @@ for (var i = 0; i < threadCount; i++)
         chromeOptions.AddArgument("--disable-popup-window");
 
         using var driver = new ChromeDriver(chromeOptions);
-
-        driver.Navigate().GoToUrl($"https://teams.microsoft.com/v2/?meetingjoin=true#/meet/{meetingId.Replace(" ", "")}?launchAgent=marketing_join&laentry=hero&p={password}&anon=true&deeplinkId=251e9ce4-ef63-44dd-9115-a2d4b9c4f46d");
-
-        // Track the time when participant joins
         var startTime = DateTime.Now;
-
-        // Enter participant name
-        while (true)
-        {
-            var input = driver.FindElements(By.TagName("input")).FirstOrDefault();
-
-            if (input == null)
-            {
-                Console.WriteLine($"Participant {participantNumber}: Waiting for input element...");
-                Thread.Sleep(250);
-                continue;
-            }
-
-            input.SendKeys($"Test Participant {participantNumber}");
-            break;
-        }
-
-        // Click the "Join now" button
-        while (true)
-        {
-            var button = driver.FindElements(By.TagName("button"))
-                .FirstOrDefault(x => x.Text.Contains("join now", StringComparison.InvariantCultureIgnoreCase));
-
-            if (button == null)
-            {
-                Console.WriteLine($"Participant {participantNumber}: Waiting for 'Join now' button...");
-                Thread.Sleep(250);
-                continue;
-            }
-
-            button.Click();
-            break;
-        }
-
-        // Mute microphone if possible
-        while (true)
-        {
-            try
-            {
-                var button = driver.FindElements(By.TagName("button"))
-                    .FirstOrDefault(x => x.GetDomAttribute("id").Contains("microphone-button", StringComparison.InvariantCultureIgnoreCase));
-
-                if (button == null)
-                {
-                    Console.WriteLine($"Participant {participantNumber}: Waiting for 'Microphone' button...");
-                    Thread.Sleep(250);
-                    continue;
-                }
-
-                button.Click();
-                break;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Participant {participantNumber}: Exception while clicking microphone button: {ex.Message}");
-                Thread.Sleep(250);
-            }
-        }
-
-        // Wait for 70 minutes (4200 seconds) to timeout
         var timeout = TimeSpan.FromMinutes(70);
 
-        // Check if 70 minutes have passed
-        while (running)
+        try
         {
-            var elapsedTime = DateTime.Now - startTime;
-            if (elapsedTime >= timeout)
-            {
-                Console.WriteLine($"Participant {participantNumber}: Timeout reached after 70 minutes, exiting...");
-                break;
-            }
-            Thread.Sleep(250); // Sleep to reduce CPU load
-        }
+            driver.Navigate().GoToUrl($"https://teams.microsoft.com/v2/?meetingjoin=true#/meet/{meetingId.Replace(" ", "")}?launchAgent=marketing_join&laentry=hero&p={password}&anon=true&deeplinkId=251e9ce4-ef63-44dd-9115-a2d4b9c4f46d");
 
-        // Retry for finding the "hangup" button with a timeout (e.g., 10 seconds)
-        IWebElement? hangup = null;
-        for (int i = 0; i < 40; i++) // Retry every 250ms for up to 10 seconds
-        {
-            hangup = driver.FindElements(By.TagName("button"))
-                .FirstOrDefault(x => x.GetDomAttribute("id") == "hangup-button");
-
-            if (hangup != null)
+            while (DateTime.Now - startTime < timeout)
             {
-                Console.WriteLine($"Participant {participantNumber}: Hangup button found.");
-                break;
+                // Try to find the participant name input
+                var input = driver.FindElements(By.TagName("input")).FirstOrDefault();
+                if (input != null)
+                {
+                    input.SendKeys($"Test Participant {participantNumber}");
+                    break;
+                }
+                Thread.Sleep(250);
             }
 
-            Console.WriteLine($"Participant {participantNumber}: Waiting for hangup button...");
-            Thread.Sleep(250); // Wait before retrying
-        }
+            while (DateTime.Now - startTime < timeout)
+            {
+                // Look for the "Join Now" button
+                var button = driver.FindElements(By.TagName("button"))
+                    .FirstOrDefault(x => x.Text.Contains("join now", StringComparison.InvariantCultureIgnoreCase));
+                if (button != null)
+                {
+                    button.Click();
+                    break;
+                }
+                Thread.Sleep(250);
+            }
 
-        if (hangup == null)
-        {
-            Console.WriteLine($"Participant {participantNumber}: Hangup button not found after retries.");
+            while (DateTime.Now - startTime < timeout)
+            {
+                try
+                {
+                    // Try to mute the microphone if the button exists
+                    var muteButton = driver.FindElements(By.TagName("button"))
+                        .FirstOrDefault(x => x.GetAttribute("id").Contains("microphone-button", StringComparison.InvariantCultureIgnoreCase));
+                    if (muteButton != null)
+                    {
+                        muteButton.Click();
+                        break;
+                    }
+                }
+                catch (Exception)
+                {
+                    // Catch any exception to prevent crashes and keep trying
+                }
+                Thread.Sleep(250);
+            }
+
+            // If the participant stays for the entire duration, exit gracefully
+            while (DateTime.Now - startTime < timeout && running)
+            {
+                Thread.Sleep(250);
+            }
+
+            Console.WriteLine($"Participant {participantNumber} is exiting after {timeout.TotalMinutes} minutes.");
         }
-        else
+        catch (Exception ex)
         {
+            Console.WriteLine($"Error for participant {participantNumber}: {ex.Message}");
+        }
+        finally
+        {
+            // Ensure the browser closes properly
             try
             {
-                hangup.Click();
-                Console.WriteLine($"Participant {participantNumber}: Hangup clicked.");
+                var hangup = driver.FindElements(By.TagName("button"))
+                    .FirstOrDefault(x => x.GetAttribute("id") == "hangup-button");
+                if (hangup != null)
+                {
+                    hangup.Click();
+                }
+                else
+                {
+                    Console.WriteLine($"Hangup button not found for participant {participantNumber}. Closing the browser.");
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Participant {participantNumber}: Failed to click hangup button: {ex.Message}");
+                Console.WriteLine($"Error closing participant {participantNumber}: {ex.Message}");
+            }
+            finally
+            {
+                // Make sure the driver quits regardless of success or failure
+                driver?.Quit();
             }
         }
-
-        // Wait a little before closing the browser after timeout or hangup
-        Thread.Sleep(3000);
-        driver.Close();
-
     });
 
     threads.Add(thread);
@@ -180,7 +171,7 @@ while (true)
 Console.WriteLine("Exiting...");
 for (var i = 0; i < threads.Count; i++)
 {
-    threads[i].Join();
+    threads[i].Join(TimeSpan.FromMinutes(70));  // Ensure a timeout for each thread
 }
 
-Console.WriteLine("All threads finished. Exiting the app.");
+Console.WriteLine("All threads are finished. Exiting the app.");
