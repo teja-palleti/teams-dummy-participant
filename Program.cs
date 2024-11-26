@@ -24,7 +24,8 @@ for (var i = 0; i < threadCount; i++)
 {
     var thread = new Thread((o) =>
     {
-        var participantNumber = (int)o;
+        if (o is not int participantNumber) return; // Safe null-check for unboxing
+        
         var chromeOptions = new ChromeOptions();
 
         // Add arguments one by one
