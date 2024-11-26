@@ -106,18 +106,35 @@ for (var i = 0; i < threadCount; i++)
             Thread.Sleep(250);
         }
 
-        // Find and click the "leave" button
-        var leave = driver.FindElements(By.TagName("button"))
-            .FirstOrDefault(x => x.GetDomAttribute("id") == "leave-button");
-
-        if (leave == null)
+        // Retry for finding the "hangup" button with a timeout (e.g., 10 seconds)
+        IWebElement? hangup = null;
+        for (int i = 0; i < 40; i++) // Retry every 250ms for up to 10 seconds
         {
-            Console.WriteLine("leave button not found for participant {0}.", participantNumber);
+            hangup = driver.FindElements(By.TagName("button"))
+                .FirstOrDefault(x => x.GetDomAttribute("id") == "hangup-button");
+
+            if (hangup != null)
+            {
+                break;
+            }
+            Thread.Sleep(250); // Wait before retrying
+        }
+
+        if (hangup == null)
+        {
+            Console.WriteLine("Hangup button not found for participant {0}.", participantNumber);
         }
         else
         {
-            leave.Click();
-            Console.WriteLine("Participant {0} hung up successfully.", participantNumber);
+            try
+            {
+                hangup.Click();
+                Console.WriteLine("Participant {0} hung up successfully.", participantNumber);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Failed to click hangup button for participant {0}: {1}", participantNumber, ex.Message);
+            }
         }
 
         Thread.Sleep(3000);
