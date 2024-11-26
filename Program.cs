@@ -102,10 +102,18 @@ for (var i = 0; i < threadCount; i++)
             Thread.Sleep(250);
         }
 
+        // Ensure that `hangup` button exists before clicking
         var hangup = driver.FindElements(By.TagName("button"))
             .FirstOrDefault(x => x.GetDomAttribute("id") == "hangup-button");
 
-        hangup?.Click(); // Safe null-check before calling
+        if (hangup == null)
+        {
+            Console.WriteLine("Hangup button not found!");
+        }
+        else
+        {
+            hangup.Click();
+        }
 
         Thread.Sleep(3000);
         driver.Close();
