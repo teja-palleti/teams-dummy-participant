@@ -1,5 +1,9 @@
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
 
 var threads = new List<Thread>();
 var running = true;
@@ -21,22 +25,21 @@ for (var i = 0; i < threadCount; i++)
     var thread = new Thread((o) =>
     {
         var participantNumber = (int)o;
-        var chromeOptions = new ChromeOptions
-        {
-            // Use headless mode
-            AddArgument("--headless"),
-            AddArgument("--window-size=1280,720"),
-            AddArgument("--mute-audio"),
-            AddArgument("--ignore-certificate-errors"),
-            AddArgument("--disable-extensions"),
-            AddArgument("--no-sandbox"),
-            AddArgument("--disable-dev-shm-usage"),
-            AddArgument("--use-fake-device-for-media-stream"),
-            AddArgument("--use-fake-ui-for-media-stream"),
-            AddArgument("--log-level=3"),
-            AddArgument("--disable-notifications"),
-            AddArgument("--disable-popup-window")
-        };
+        var chromeOptions = new ChromeOptions();
+
+        // Add arguments one by one
+        chromeOptions.AddArgument("--headless");
+        chromeOptions.AddArgument("--window-size=1280,720");
+        chromeOptions.AddArgument("--mute-audio");
+        chromeOptions.AddArgument("--ignore-certificate-errors");
+        chromeOptions.AddArgument("--disable-extensions");
+        chromeOptions.AddArgument("--no-sandbox");
+        chromeOptions.AddArgument("--disable-dev-shm-usage");
+        chromeOptions.AddArgument("--use-fake-device-for-media-stream");
+        chromeOptions.AddArgument("--use-fake-ui-for-media-stream");
+        chromeOptions.AddArgument("--log-level=3");
+        chromeOptions.AddArgument("--disable-notifications");
+        chromeOptions.AddArgument("--disable-popup-window");
 
         using var driver = new ChromeDriver(chromeOptions);
 
@@ -46,7 +49,7 @@ for (var i = 0; i < threadCount; i++)
         {
             var input = driver.FindElements(By.TagName("input")).FirstOrDefault();
 
-            if (input is null)
+            if (input == null)
             {
                 Thread.Sleep(250);
                 continue;
@@ -58,9 +61,10 @@ for (var i = 0; i < threadCount; i++)
 
         while (true)
         {
-            var button = driver.FindElements(By.TagName("button")).FirstOrDefault(x => x.Text.Contains("join now", StringComparison.InvariantCultureIgnoreCase));
+            var button = driver.FindElements(By.TagName("button"))
+                .FirstOrDefault(x => x.Text.Contains("join now", StringComparison.InvariantCultureIgnoreCase));
 
-            if (button is null)
+            if (button == null)
             {
                 Thread.Sleep(250);
                 continue;
@@ -74,9 +78,10 @@ for (var i = 0; i < threadCount; i++)
         {
             try
             {
-                var button = driver.FindElements(By.TagName("button")).FirstOrDefault(x => x.GetDomAttribute("id").Contains("microphone-button", StringComparison.InvariantCultureIgnoreCase));
+                var button = driver.FindElements(By.TagName("button"))
+                    .FirstOrDefault(x => x.GetDomAttribute("id").Contains("microphone-button", StringComparison.InvariantCultureIgnoreCase));
 
-                if (button is null)
+                if (button == null)
                 {
                     Thread.Sleep(250);
                     continue;
@@ -99,7 +104,7 @@ for (var i = 0; i < threadCount; i++)
         var hangup = driver.FindElements(By.TagName("button"))
             .FirstOrDefault(x => x.GetDomAttribute("id") == "hangup-button");
 
-        hangup?.Click();
+        hangup?.Click(); // Safe null-check before calling
 
         Thread.Sleep(3000);
         driver.Close();
@@ -107,7 +112,6 @@ for (var i = 0; i < threadCount; i++)
     });
 
     threads.Add(thread);
-
     thread.Start(i + 1);
 }
 
