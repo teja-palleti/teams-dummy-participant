@@ -106,17 +106,17 @@ for (var i = 0; i < threadCount; i++)
             Thread.Sleep(250);
         }
 
-        // Find and click the "hangup" button
-        var hangup = driver.FindElements(By.TagName("button"))
-            .FirstOrDefault(x => x.GetDomAttribute("id") == "hangup-button");
+        // Find and click the "leave" button
+        var leave = driver.FindElements(By.TagName("button"))
+            .FirstOrDefault(x => x.GetDomAttribute("id") == "leave-button");
 
-        if (hangup == null)
+        if (leave == null)
         {
-            Console.WriteLine("Hangup button not found for participant {0}.", participantNumber);
+            Console.WriteLine("leave button not found for participant {0}.", participantNumber);
         }
         else
         {
-            hangup.Click();
+            leave.Click();
             Console.WriteLine("Participant {0} hung up successfully.", participantNumber);
         }
 
