@@ -1,44 +1,19 @@
-﻿using OpenQA.Selenium;
+using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 
 var threads = new List<Thread>();
 var running = true;
-var meetingId = string.Empty;
-var password = string.Empty;
-var threadCount = 0;
+var meetingId = Environment.GetEnvironmentVariable("MEETING_ID");
+var password = Environment.GetEnvironmentVariable("MEETING_PASSWORD");
+var threadCount = int.Parse(Environment.GetEnvironmentVariable("PARTICIPANT_COUNT") ?? "0");
 
 Console.WriteLine("MS Teams Dummy Participant Runner - Using Chrome");
 Console.WriteLine("Created by Elias Puurunen @ Tractus Events - https://www.tractusevents.com");
 
-if (args.Length == 3)
+if (string.IsNullOrEmpty(meetingId) || string.IsNullOrEmpty(password) || threadCount <= 0)
 {
-    meetingId = args[0];
-    password = args[1];
-    threadCount = int.Parse(args[2]);
-}
-else
-{
-    Console.WriteLine("Please provide the Teams meeting ID.");
-
-    while (string.IsNullOrEmpty(meetingId))
-    {
-        meetingId = Console.ReadLine();
-    }
-
-
-    Console.WriteLine("Please provide the Teams meeting password.");
-
-    while (string.IsNullOrEmpty(password))
-    {
-        password = Console.ReadLine();
-    }
-
-    Console.WriteLine("How many test participants? (Max recommended: 5)");
-
-    while(!int.TryParse(Console.ReadLine(), out threadCount))
-    {
-
-    }
+    Console.WriteLine("Please provide the Teams meeting ID, password, and number of participants.");
+    Environment.Exit(1); // Exit with an error if required values are not provided.
 }
 
 for (var i = 0; i < threadCount; i++)
@@ -48,30 +23,20 @@ for (var i = 0; i < threadCount; i++)
         var participantNumber = (int)o;
         var chromeOptions = new ChromeOptions
         {
-
+            // Use headless mode
+            AddArgument("--headless"),
+            AddArgument("--window-size=1280,720"),
+            AddArgument("--mute-audio"),
+            AddArgument("--ignore-certificate-errors"),
+            AddArgument("--disable-extensions"),
+            AddArgument("--no-sandbox"),
+            AddArgument("--disable-dev-shm-usage"),
+            AddArgument("--use-fake-device-for-media-stream"),
+            AddArgument("--use-fake-ui-for-media-stream"),
+            AddArgument("--log-level=3"),
+            AddArgument("--disable-notifications"),
+            AddArgument("--disable-popup-window")
         };
-
-        //chromeOptions.AddArgument("--headless");
-        chromeOptions.AddArgument("--window-size=1280,720");
-        chromeOptions.AddArgument("--mute-audio");
-        //chromeOptions.AddArgument("--disable-gpu");
-        chromeOptions.AddArgument("--ignore-certificate-errors");
-        chromeOptions.AddArgument("--disable-extensions");
-        chromeOptions.AddArgument("--no-sandbox");
-        chromeOptions.AddArgument("--disable-dev-shm-usage");
-        chromeOptions.AddArgument("--use-fake-device-for-media-stream");
-        chromeOptions.AddArgument("--use-fake-ui-for-media-stream");
-        chromeOptions.AddArgument("--log-level=3");
-        chromeOptions.AddArgument("--disable-notifications");
-        chromeOptions.AddArgument("--disable-popup-window");
-
-        chromeOptions.AddUserProfilePreference("protocol_handler", new
-        {
-            excluded_schemes = new
-            {
-                msteams = false
-            }
-        });
 
         using var driver = new ChromeDriver(chromeOptions);
 
@@ -109,7 +74,7 @@ for (var i = 0; i < threadCount; i++)
         {
             try
             {
-                var button = driver.FindElements(By.TagName("button")).FirstOrDefault(x => x.GetAttribute("id").Contains("microphone-button", StringComparison.InvariantCultureIgnoreCase));
+                var button = driver.FindElements(By.TagName("button")).FirstOrDefault(x => x.GetDomAttribute("id").Contains("microphone-button", StringComparison.InvariantCultureIgnoreCase));
 
                 if (button is null)
                 {
@@ -131,9 +96,8 @@ for (var i = 0; i < threadCount; i++)
             Thread.Sleep(250);
         }
 
-
         var hangup = driver.FindElements(By.TagName("button"))
-            .FirstOrDefault(x => x.GetAttribute("id") == "hangup-button");
+            .FirstOrDefault(x => x.GetDomAttribute("id") == "hangup-button");
 
         hangup?.Click();
 
@@ -146,7 +110,6 @@ for (var i = 0; i < threadCount; i++)
 
     thread.Start(i + 1);
 }
-
 
 Console.WriteLine("Launched. Type q and hit enter to exit.");
 while (true)
@@ -165,4 +128,4 @@ for (var i = 0; i < threads.Count; i++)
     threads[i].Join();
 }
 
-Console.WriteLine("All threads look finished. Exiting the app.");
+Console.WriteLine("All threads finished. Exiting the app.");
