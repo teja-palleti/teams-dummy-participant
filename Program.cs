@@ -46,6 +46,9 @@ for (var i = 0; i < threadCount; i++)
 
         driver.Navigate().GoToUrl($"https://teams.microsoft.com/v2/?meetingjoin=true#/meet/{meetingId.Replace(" ", "")}?launchAgent=marketing_join&laentry=hero&p={password}&anon=true&deeplinkId=251e9ce4-ef63-44dd-9115-a2d4b9c4f46d");
 
+        // Track the time when participant joins
+        var startTime = DateTime.Now;
+
         // Enter participant name
         while (true)
         {
@@ -53,6 +56,7 @@ for (var i = 0; i < threadCount; i++)
 
             if (input == null)
             {
+                Console.WriteLine($"Participant {participantNumber}: Waiting for input element...");
                 Thread.Sleep(250);
                 continue;
             }
@@ -69,6 +73,7 @@ for (var i = 0; i < threadCount; i++)
 
             if (button == null)
             {
+                Console.WriteLine($"Participant {participantNumber}: Waiting for 'Join now' button...");
                 Thread.Sleep(250);
                 continue;
             }
@@ -87,6 +92,7 @@ for (var i = 0; i < threadCount; i++)
 
                 if (button == null)
                 {
+                    Console.WriteLine($"Participant {participantNumber}: Waiting for 'Microphone' button...");
                     Thread.Sleep(250);
                     continue;
                 }
@@ -94,16 +100,26 @@ for (var i = 0; i < threadCount; i++)
                 button.Click();
                 break;
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"Participant {participantNumber}: Exception while clicking microphone button: {ex.Message}");
                 Thread.Sleep(250);
             }
         }
 
-        // Wait while the test is running
+        // Wait for 70 minutes (4200 seconds) to timeout
+        var timeout = TimeSpan.FromMinutes(70);
+
+        // Check if 70 minutes have passed
         while (running)
         {
-            Thread.Sleep(250);
+            var elapsedTime = DateTime.Now - startTime;
+            if (elapsedTime >= timeout)
+            {
+                Console.WriteLine($"Participant {participantNumber}: Timeout reached after 70 minutes, exiting...");
+                break;
+            }
+            Thread.Sleep(250); // Sleep to reduce CPU load
         }
 
         // Retry for finding the "hangup" button with a timeout (e.g., 10 seconds)
@@ -115,28 +131,32 @@ for (var i = 0; i < threadCount; i++)
 
             if (hangup != null)
             {
+                Console.WriteLine($"Participant {participantNumber}: Hangup button found.");
                 break;
             }
+
+            Console.WriteLine($"Participant {participantNumber}: Waiting for hangup button...");
             Thread.Sleep(250); // Wait before retrying
         }
 
         if (hangup == null)
         {
-            Console.WriteLine("Hangup button not found for participant {0}.", participantNumber);
+            Console.WriteLine($"Participant {participantNumber}: Hangup button not found after retries.");
         }
         else
         {
             try
             {
                 hangup.Click();
-                Console.WriteLine("Participant {0} hung up successfully.", participantNumber);
+                Console.WriteLine($"Participant {participantNumber}: Hangup clicked.");
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Failed to click hangup button for participant {0}: {1}", participantNumber, ex.Message);
+                Console.WriteLine($"Participant {participantNumber}: Failed to click hangup button: {ex.Message}");
             }
         }
 
+        // Wait a little before closing the browser after timeout or hangup
         Thread.Sleep(3000);
         driver.Close();
 
