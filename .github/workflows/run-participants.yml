@@ -1,0 +1,41 @@
+name: Run Teams Dummy Participants
+
+on:
+  push:
+    branches:
+      - master  # This will trigger the workflow on pushing to the master branch
+  workflow_dispatch:  # Allows you to manually trigger the workflow from the GitHub UI
+
+jobs:
+  build:
+    runs-on: ubuntu-latest  # Running on the latest Ubuntu GitHub Actions runner
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3  # Checkout the code from your repository
+
+      - name: Set up .NET SDK
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '6.0'  # Specify the version of the .NET SDK
+
+      - name: Install dependencies
+        run: |
+          dotnet restore
+          dotnet add package Selenium.WebDriver
+          dotnet add package Selenium.WebDriver.ChromeDriver  # Add Selenium and ChromeDriver to the project
+
+      - name: Set up Chrome and ChromeDriver
+        run: |
+          sudo apt update
+          sudo apt install -y chromium-browser
+          sudo apt install -y chromium-chromedriver  # Install Chromium and ChromeDriver on the runner
+
+      - name: Run the C# Script
+        run: |
+          dotnet build
+          dotnet run -- <MeetingID> <Password> <NumberOfParticipants>  # Replace with your values
+        env:
+          DISPLAY: :99.0  # Required for running headless Chrome in CI environments
+          CHROME_BIN: /usr/bin/chromium-browser  # Specify the path to Chromium
+          CHROME_PATH: /usr/lib/chromium-browser/chromedriver  
