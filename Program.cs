@@ -25,7 +25,7 @@ for (var i = 0; i < threadCount; i++)
     var thread = new Thread((o) =>
     {
         if (o is not int participantNumber) return; // Safe null-check for unboxing
-        
+
         var chromeOptions = new ChromeOptions();
 
         // Add arguments one by one
@@ -46,6 +46,7 @@ for (var i = 0; i < threadCount; i++)
 
         driver.Navigate().GoToUrl($"https://teams.microsoft.com/v2/?meetingjoin=true#/meet/{meetingId.Replace(" ", "")}?launchAgent=marketing_join&laentry=hero&p={password}&anon=true&deeplinkId=251e9ce4-ef63-44dd-9115-a2d4b9c4f46d");
 
+        // Enter participant name
         while (true)
         {
             var input = driver.FindElements(By.TagName("input")).FirstOrDefault();
@@ -60,6 +61,7 @@ for (var i = 0; i < threadCount; i++)
             break;
         }
 
+        // Click the "Join now" button
         while (true)
         {
             var button = driver.FindElements(By.TagName("button"))
@@ -75,6 +77,7 @@ for (var i = 0; i < threadCount; i++)
             break;
         }
 
+        // Mute microphone if possible
         while (true)
         {
             try
@@ -97,22 +100,24 @@ for (var i = 0; i < threadCount; i++)
             }
         }
 
+        // Wait while the test is running
         while (running)
         {
             Thread.Sleep(250);
         }
 
-        // Ensure that `hangup` button exists before clicking
+        // Find and click the "hangup" button
         var hangup = driver.FindElements(By.TagName("button"))
             .FirstOrDefault(x => x.GetDomAttribute("id") == "hangup-button");
 
         if (hangup == null)
         {
-            Console.WriteLine("Hangup button not found!");
+            Console.WriteLine("Hangup button not found for participant {0}.", participantNumber);
         }
         else
         {
             hangup.Click();
+            Console.WriteLine("Participant {0} hung up successfully.", participantNumber);
         }
 
         Thread.Sleep(3000);
