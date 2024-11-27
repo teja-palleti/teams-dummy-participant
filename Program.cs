@@ -11,7 +11,7 @@ var running = true;
 // Default values
 var meetingId = "938 808 388 348 5";
 var password = "YW2eJ9";
-var threadCount = 15;
+var threadCount = 10;
 
 // Check if arguments are provided
 if (args.Length == 3)
