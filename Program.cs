@@ -22,20 +22,9 @@ if (args.Length == 3)
     {
         threadCount = parsedCount;
     }
-    else
-    {
-        Console.WriteLine("Invalid thread count argument. Using default value: 15.");
-    }
 }
 
-Console.WriteLine("MS Teams Dummy Participant Runner - Using Chrome");
-Console.WriteLine("Created by Charan Teja @teja_palleti - https://www.github.com/teja-palleti");
-
-// Display the default values for reference
-Console.WriteLine($"Meeting ID: {meetingId}");
-Console.WriteLine($"Password: {password}");
-Console.WriteLine($"Participant count: {threadCount}");
-
+// Launch participants silently (no console output)
 for (var i = 0; i < threadCount; i++)
 {
     var thread = new Thread((o) =>
@@ -62,6 +51,12 @@ for (var i = 0; i < threadCount; i++)
 
         try
         {
+            // Ensure meetingId and password are non-null
+            if (string.IsNullOrEmpty(meetingId) || string.IsNullOrEmpty(password))
+            {
+                return;  // Skip if invalid
+            }
+
             driver.Navigate().GoToUrl($"https://teams.microsoft.com/v2/?meetingjoin=true#/meet/{meetingId.Replace(" ", "")}?launchAgent=marketing_join&laentry=hero&p={password}&anon=true&deeplinkId=251e9ce4-ef63-44dd-9115-a2d4b9c4f46d");
 
             // Wait for input field to appear
@@ -76,7 +71,7 @@ for (var i = 0; i < threadCount; i++)
                 Thread.Sleep(250);
             }
 
-            // Wait for the "Join Now" button and click it
+            // Wait for "Join Now" button and click it
             while (DateTime.Now - startTime < timeout)
             {
                 var button = driver.FindElements(By.TagName("button"))
@@ -102,28 +97,25 @@ for (var i = 0; i < threadCount; i++)
                         break;
                     }
                 }
-                catch (Exception ex)
+                catch
                 {
-                    Console.WriteLine($"Error muting microphone for participant {participantNumber}: {ex.Message}");
+                    // Catching any mute-related errors, but not logging
                 }
                 Thread.Sleep(250);
             }
 
-            // If the participant stays for the entire duration, exit gracefully
+            // Wait for the participant to stay for the entire duration
             while (DateTime.Now - startTime < timeout && running)
             {
                 Thread.Sleep(250);
             }
-
-            Console.WriteLine($"Participant {participantNumber} is exiting after {timeout.TotalMinutes} minutes.");
         }
-        catch (Exception ex)
+        catch
         {
-            Console.WriteLine($"Error for participant {participantNumber}: {ex.Message}");
+            // Silent catch, we don't want any logging
         }
         finally
         {
-            // Ensure the browser closes properly
             try
             {
                 var hangup = driver.FindElements(By.TagName("button"))
@@ -132,18 +124,14 @@ for (var i = 0; i < threadCount; i++)
                 {
                     hangup.Click();
                 }
-                else
-                {
-                    Console.WriteLine($"Hangup button not found for participant {participantNumber}. Closing the browser.");
-                }
             }
-            catch (Exception ex)
+            catch
             {
-                Console.WriteLine($"Error closing participant {participantNumber}: {ex.Message}");
+                // Ignore any errors while attempting to hang up
             }
             finally
             {
-                driver?.Quit();
+                driver?.Quit();  // Ensure the browser closes properly
             }
         }
     });
@@ -152,21 +140,8 @@ for (var i = 0; i < threadCount; i++)
     thread.Start(i + 1);
 }
 
-Console.WriteLine("Launched. Type q and hit enter to exit.");
-while (true)
-{
-    var command = Console.ReadLine();
-    if (command.Contains("q", StringComparison.InvariantCultureIgnoreCase))
-    {
-        running = false;
-        break;
-    }
-}
-
-Console.WriteLine("Exiting...");
+// Let the threads run until the process is manually terminated
 for (var i = 0; i < threads.Count; i++)
 {
     threads[i].Join(TimeSpan.FromMinutes(70));  // Ensure a timeout for each thread
 }
-
-Console.WriteLine("All threads are finished. Exiting the app.");
