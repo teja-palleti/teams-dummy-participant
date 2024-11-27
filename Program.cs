@@ -45,12 +45,13 @@ for (var i = 0; i < threadCount; i++)
         chromeOptions.AddArgument("--disable-notifications");
         chromeOptions.AddArgument("--disable-popup-window");
 
-        using var driver = new ChromeDriver(chromeOptions);
-        var startTime = DateTime.Now;
-        var timeout = TimeSpan.FromMinutes(70);
-
+        IWebDriver driver = null;
         try
         {
+            driver = new ChromeDriver(chromeOptions);
+            var startTime = DateTime.Now;
+            var timeout = TimeSpan.FromMinutes(70);
+
             // Ensure meetingId and password are non-null
             if (string.IsNullOrEmpty(meetingId) || string.IsNullOrEmpty(password))
             {
@@ -110,20 +111,18 @@ for (var i = 0; i < threadCount; i++)
                 Thread.Sleep(250);
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Silent catch, we don't want any logging
+            // Log exception if necessary (optional for CI/CD)
         }
         finally
         {
             try
             {
-                var hangup = driver.FindElements(By.TagName("button"))
+                // Try to hang up the meeting
+                var hangup = driver?.FindElements(By.TagName("button"))
                     .FirstOrDefault(x => x.GetDomAttribute("id") == "hangup-button");
-                if (hangup != null)
-                {
-                    hangup.Click();
-                }
+                hangup?.Click();
             }
             catch
             {
@@ -131,7 +130,7 @@ for (var i = 0; i < threadCount; i++)
             }
             finally
             {
-                driver?.Quit();  // Ensure the browser closes properly
+                driver?.Quit();  // Ensure proper cleanup of the browser session
             }
         }
     });
@@ -140,8 +139,8 @@ for (var i = 0; i < threadCount; i++)
     thread.Start(i + 1);
 }
 
-// Let the threads run until the process is manually terminated
+// Wait for all threads to complete
 for (var i = 0; i < threads.Count; i++)
 {
-    threads[i].Join(TimeSpan.FromMinutes(70));  // Ensure a timeout for each thread
+    threads[i].Join(TimeSpan.FromMinutes(70));  // Increase thread wait time if necessary
 }
