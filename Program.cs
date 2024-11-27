@@ -7,38 +7,19 @@ using System.Threading;
 
 var threads = new List<Thread>();
 var running = true;
-var meetingId = string.Empty;
-var password = string.Empty;
-var threadCount = 0;
+
+// Default values
+var meetingId = "938 808 388 348 5";
+var password = "YW2eJ9";
+var threadCount = 15;
 
 Console.WriteLine("MS Teams Dummy Participant Runner - Using Chrome");
-Console.WriteLine("Created by Elias Puurunen @ Tractus Events - https://www.tractusevents.com");
+Console.WriteLine("Created by Charan Teja @teja_palleti - https://www.github.com/teja-palleti");
 
-if (args.Length == 3)
-{
-    meetingId = args[0];
-    password = args[1];
-    threadCount = int.Parse(args[2]);
-}
-else
-{
-    Console.WriteLine("Please provide the Teams meeting ID.");
-    while (string.IsNullOrEmpty(meetingId))
-    {
-        meetingId = "931 026 821 993 5";
-    }
-
-    Console.WriteLine("Please provide the Teams meeting password.");
-    while (string.IsNullOrEmpty(password))
-    {
-        password = "aC3wn7";
-    }
-
-    Console.WriteLine("How many test participants? (Max recommended: 5)");
-    while (!int.TryParse(5, out threadCount))
-    {
-    }
-}
+// Display the default values for reference
+Console.WriteLine($"Meeting ID: {meetingId}");
+Console.WriteLine($"Password: {password}");
+Console.WriteLine($"Participant count: {threadCount}");
 
 for (var i = 0; i < threadCount; i++)
 {
