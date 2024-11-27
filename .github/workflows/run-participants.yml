@@ -1,44 +1,55 @@
-name: Run Teams Dummy Participants
+name: Run MS Teams Dummy Participants
 
 on:
   push:
     branches:
-      - main  # Trigger on push to main branch
-  workflow_dispatch:  # Allow manual trigger from GitHub UI
+      - main
+  workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: ubuntu-latest  # Run on the latest Ubuntu runner
+  run-dummy-participants:
+    runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up .NET SDK
+      # Step 2: Set up .NET SDK (assumes your project uses .NET SDK)
+      - name: Set up .NET Core
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '6.0'  # Specify the .NET version
+          dotnet-version: '7.x'  # Adjust this version based on your project's .NET version
 
-      - name: Install dependencies
-        run: |
-          dotnet restore
-          dotnet add package Selenium.WebDriver
-          dotnet add package Selenium.WebDriver.ChromeDriver
-
+      # Step 3: Install Chrome and ChromeDriver (necessary for Selenium)
       - name: Install Chrome and ChromeDriver
         run: |
-          sudo apt update
-          sudo apt install -y chromium-browser
-          sudo apt install -y chromium-chromedriver
+          sudo apt-get update
+          sudo apt-get install -y wget
+          sudo apt-get install -y chromium-browser
+          sudo apt-get install -y chromedriver
 
-      - name: Run the C# Script
+      # Step 4: Install project dependencies
+      - name: Restore .NET dependencies
+        run: dotnet restore
+
+      # Step 5: Build the project
+      - name: Build project
+        run: dotnet build --configuration Release
+
+      # Step 6: Run tests or start the participant runner (specify parameters)
+      - name: Run Dummy Participants
         run: |
-          dotnet build
-          dotnet run
-        env:
-          MEETING_ID: ${{ secrets.MEETING_ID }}  # GitHub Secret for the meeting ID
-          MEETING_PASSWORD: ${{ secrets.MEETING_PASSWORD }}  # GitHub Secret for the password
-          PARTICIPANT_COUNT: ${{ secrets.PARTICIPANT_COUNT }}  # GitHub Secret for participant count
-          DISPLAY: :99.0  # Headless display setup for CI/CD environment
-          CHROME_BIN: /usr/bin/chromium-browser  # Path to Chromium
-          CHROME_PATH: /usr/lib/chromium-browser/chromedriver  # Path to ChromeDriver
+          # Set up environment variables for meeting details and participant count
+          echo "MEETING_ID=your-meeting-id-here" >> $GITHUB_ENV
+          echo "MEETING_PASSWORD=your-meeting-password-here" >> $GITHUB_ENV
+          echo "PARTICIPANT_COUNT=10" >> $GITHUB_ENV
+
+          # Run the participant runner
+          dotnet run --configuration Release
+
+      # Optional: Step 7 - Clean up (if needed)
+      - name: Clean up
+        run: |
+          sudo apt-get remove -y chromium-browser chromedriver
+          sudo apt-get autoremove -y
