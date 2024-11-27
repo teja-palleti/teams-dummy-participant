@@ -41,8 +41,8 @@ jobs:
       - name: Run Dummy Participants
         run: |
           # Set up environment variables for meeting details and participant count
-          echo "MEETING_ID=your-meeting-id-here" >> $GITHUB_ENV
-          echo "MEETING_PASSWORD=your-meeting-password-here" >> $GITHUB_ENV
+          echo "MEETING_ID=938 808 388 348 5" >> $GITHUB_ENV
+          echo "MEETING_PASSWORD=YW2eJ9" >> $GITHUB_ENV
           echo "PARTICIPANT_COUNT=10" >> $GITHUB_ENV
 
           # Run the participant runner
