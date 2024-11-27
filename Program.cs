@@ -18,7 +18,14 @@ if (args.Length == 3)
 {
     meetingId = args[0];
     password = args[1];
-    threadCount = int.Parse(args[2]);
+    if (int.TryParse(args[2], out var parsedCount))
+    {
+        threadCount = parsedCount;
+    }
+    else
+    {
+        Console.WriteLine("Invalid thread count argument. Using default value: 15.");
+    }
 }
 
 Console.WriteLine("MS Teams Dummy Participant Runner - Using Chrome");
