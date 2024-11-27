@@ -13,6 +13,14 @@ var meetingId = "938 808 388 348 5";
 var password = "YW2eJ9";
 var threadCount = 15;
 
+// Check if arguments are provided
+if (args.Length == 3)
+{
+    meetingId = args[0];
+    password = args[1];
+    threadCount = int.Parse(args[2]);
+}
+
 Console.WriteLine("MS Teams Dummy Participant Runner - Using Chrome");
 Console.WriteLine("Created by Charan Teja @teja_palleti - https://www.github.com/teja-palleti");
 
@@ -49,9 +57,9 @@ for (var i = 0; i < threadCount; i++)
         {
             driver.Navigate().GoToUrl($"https://teams.microsoft.com/v2/?meetingjoin=true#/meet/{meetingId.Replace(" ", "")}?launchAgent=marketing_join&laentry=hero&p={password}&anon=true&deeplinkId=251e9ce4-ef63-44dd-9115-a2d4b9c4f46d");
 
+            // Wait for input field to appear
             while (DateTime.Now - startTime < timeout)
             {
-                // Try to find the participant name input
                 var input = driver.FindElements(By.TagName("input")).FirstOrDefault();
                 if (input != null)
                 {
@@ -61,9 +69,9 @@ for (var i = 0; i < threadCount; i++)
                 Thread.Sleep(250);
             }
 
+            // Wait for the "Join Now" button and click it
             while (DateTime.Now - startTime < timeout)
             {
-                // Look for the "Join Now" button
                 var button = driver.FindElements(By.TagName("button"))
                     .FirstOrDefault(x => x.Text.Contains("join now", StringComparison.InvariantCultureIgnoreCase));
                 if (button != null)
@@ -74,22 +82,22 @@ for (var i = 0; i < threadCount; i++)
                 Thread.Sleep(250);
             }
 
+            // Mute microphone if button exists
             while (DateTime.Now - startTime < timeout)
             {
                 try
                 {
-                    // Try to mute the microphone if the button exists
                     var muteButton = driver.FindElements(By.TagName("button"))
-                        .FirstOrDefault(x => x.GetAttribute("id").Contains("microphone-button", StringComparison.InvariantCultureIgnoreCase));
+                        .FirstOrDefault(x => x.GetDomAttribute("id").Contains("microphone-button", StringComparison.InvariantCultureIgnoreCase));
                     if (muteButton != null)
                     {
                         muteButton.Click();
                         break;
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    // Catch any exception to prevent crashes and keep trying
+                    Console.WriteLine($"Error muting microphone for participant {participantNumber}: {ex.Message}");
                 }
                 Thread.Sleep(250);
             }
@@ -112,7 +120,7 @@ for (var i = 0; i < threadCount; i++)
             try
             {
                 var hangup = driver.FindElements(By.TagName("button"))
-                    .FirstOrDefault(x => x.GetAttribute("id") == "hangup-button");
+                    .FirstOrDefault(x => x.GetDomAttribute("id") == "hangup-button");
                 if (hangup != null)
                 {
                     hangup.Click();
@@ -128,7 +136,6 @@ for (var i = 0; i < threadCount; i++)
             }
             finally
             {
-                // Make sure the driver quits regardless of success or failure
                 driver?.Quit();
             }
         }
