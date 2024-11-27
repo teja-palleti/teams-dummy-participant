@@ -144,3 +144,30 @@ for (var i = 0; i < threads.Count; i++)
 {
     threads[i].Join(TimeSpan.FromMinutes(70));  // Increase thread wait time if necessary
 }
+
+// Force shutdown of any remaining processes after all threads are finished
+ForceShutdownProcesses();
+
+// Ensure no leftover processes
+void ForceShutdownProcesses()
+{
+    // Forcefully kill any orphaned dotnet or chromium processes (if they exist)
+    try
+    {
+        var process = System.Diagnostics.Process.GetProcessesByName("dotnet");
+        foreach (var p in process)
+        {
+            p.Kill();
+        }
+
+        var chromes = System.Diagnostics.Process.GetProcessesByName("chrome");
+        foreach (var p in chromes)
+        {
+            p.Kill();
+        }
+    }
+    catch (Exception ex)
+    {
+        // Log the error if any
+    }
+}
